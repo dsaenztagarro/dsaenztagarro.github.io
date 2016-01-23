@@ -22,7 +22,7 @@ it is non-zero.
 
 `$#` is the number of positional parameters.
 
-Example extracted from `bootstrap.sh` of my [dotfiles](https://github.com/dsaenztagarro/dotfiles):
+Example extracted from `bootstrap.sh` of my **[dotfiles](https://github.com/dsaenztagarro/dotfiles)**:
 
 {% highlight bash linenos %}
 #!/bin/bash
