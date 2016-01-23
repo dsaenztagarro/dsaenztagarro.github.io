@@ -23,7 +23,7 @@ it is non-zero.
 
 Example extracted from `bootstrap.sh` of my [dotfiles](https://github.com/dsaenztagarro/dotfiles):
 
-{% highlight shell linenos %}
+{% highlight bash linenos %}
 #!/bin/bash
 # Use > 1 to consume two arguments per pass in the loop (e.g. each
 # argument has a corresponding value to go with it).
