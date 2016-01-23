@@ -31,10 +31,8 @@ A `SIGNAL_SPEC` of `ERR` means to execute `ARG` each time a command's failure
 would cause the shell to exit when the -e option is enabled.  If no arguments
 are supplied, trap prints the list of commands associated with each signal.
 
-
 In bash `$$` is the process ID, which is fine if you need a single file,
 otherwise take a look at the `mktemp` command.
-
 
 Example extracted from `.git_template/hooks/ctags` of my **[dotfiles](https://github.com/dsaenztagarro/dotfiles)**:
 

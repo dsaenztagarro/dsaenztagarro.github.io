@@ -1,8 +1,9 @@
 ---
 layout: post
 title:  "Bash special parameters #1"
-date:   2016-01-23 13:00:00 +0100
-categories: bash
+date:   2016-01-16 13:00:00 +0100
+tags:
+- bash
 ---
 
 The `shift` command is one of the Bourne shell built-ins that comes with Bash.
