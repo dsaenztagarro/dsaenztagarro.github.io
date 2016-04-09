@@ -11,6 +11,14 @@ tags:
   2](https://support.apple.com/en-us/HT204837). If you have a SSD you will not
   notice. If you have Time Machine backups, encrypting these is very easy too.
 
+  {% highlight bash linenos %}
+  # Status
+  sudo fdesetup status
+
+  # Enable
+  sudo fdesetup enable
+  {% endhighlight %}
+
 - Use [1Password](https://agilebits.com/onepassword) or similar software to
   store all your passwords. Don't store passwords or files that contain
   important information unencrypted.
@@ -30,6 +38,22 @@ tags:
 
 - When I need to generate a password, I always use 1Password to generate it
   with the highest strength possible.
+
+- Update your screensaver settings to immediate lock and ask for password
+
+  {% highlight bash linenos %}
+  # Status
+  defaults read com.apple.screensaver askForPasswordDelay
+
+  # Enable (Default)
+  defaults write com.apple.screensaver askForPasswordDelay -int 0
+
+  # Status
+  defaults read com.apple.screensaver askForPassword
+
+  # Enable
+  defaults write com.apple.screensaver askForPassword -int 1
+  {% endhighlight %}
 
 - Add a message to the login window
 
