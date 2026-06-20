@@ -13,9 +13,23 @@ export default defineConfig({
   },
   integrations: [
     // Expressive Code must run before MDX so fenced code blocks are themed.
+    // A dark slate code surface (Engineer's neutral-950) reads as an
+    // intentional accent against the light page; JetBrains Mono + Inter UI.
     expressiveCode({
-      themes: ['github-dark', 'github-light'],
-      styleOverrides: { borderRadius: '0.5rem' },
+      themes: ['github-dark-default'],
+      styleOverrides: {
+        borderRadius: '8px',
+        borderWidth: '1px',
+        borderColor: '#1e293b',
+        codeBackground: '#0f172a',
+        codeFontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+        uiFontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
+        codeFontSize: '0.84rem',
+        frames: {
+          editorTabBarBackground: '#0b1220',
+          terminalTitlebarBackground: '#0b1220',
+        },
+      },
     }),
     mdx(),
     sitemap(),

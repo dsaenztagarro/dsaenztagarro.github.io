@@ -1,41 +1,95 @@
 ---
 import { SITE_TITLE } from '../consts';
+const path = Astro.url.pathname;
+const isHome = path === '/';
 ---
 
 <header class="site-header">
-  <div class="container header-inner">
-    <a class="brand" href="/">{SITE_TITLE}</a>
+  <div class="container container--wide header-inner">
+    <a class="brand" href="/" aria-current={isHome ? 'page' : undefined}>
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+             stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12.5l4.5 4.5L19 7" />
+        </svg>
+      </span>
+      <span class="brand-name">{SITE_TITLE}</span>
+    </a>
     <nav class="nav" aria-label="Primary">
-      <a href="/">Blog</a>
+      <a class:list={['nav-link', { active: isHome }]} href="/">Writing</a>
+      <a class="nav-link" href="https://mcp-rune.dev">mcp-rune</a>
+      <a class="nav-link" href="https://engineer.dsaenz.dev">Engineer</a>
     </nav>
   </div>
 </header>
 
 <style>
   .site-header {
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in oklab, var(--paper) 82%, transparent);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
   .header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-block: 1.25rem;
+    gap: 1rem;
+    padding-block: 0.85rem;
   }
   .brand {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--color-fg);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     text-decoration: none;
+    color: var(--ink);
+    min-width: 0;
+  }
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .brand-name {
+    font-weight: 650;
+    font-size: 1.02rem;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
   }
   .nav {
     display: flex;
-    gap: 1rem;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--text-sm);
   }
-  .nav a {
-    color: var(--color-muted);
+  .nav-link {
+    display: inline-flex;
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    color: var(--muted);
     text-decoration: none;
+    transition: color 0.15s var(--ease), background 0.15s var(--ease);
   }
-  .nav a:hover {
-    color: var(--color-fg);
+  .nav-link:hover {
+    color: var(--n-700);
+    background: var(--n-100);
+  }
+  .nav-link.active {
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+  }
+  @media (max-width: 30rem) {
+    .nav-link:nth-child(n + 2) {
+      display: none;
+    }
   }
 </style>

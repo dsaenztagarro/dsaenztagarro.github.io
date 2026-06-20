@@ -28,11 +28,12 @@ const sorted = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf(
 ---
 
 <BaseLayout title={`#${label}`} description={`Posts tagged ${label}`}>
-  <section class="container intro">
-    <p class="back"><a href="/">← All posts</a></p>
-    <h1>#{label}</h1>
+  <section class="container container--wide intro rise">
+    <a class="back" href="/">← Writing</a>
+    <p class="eyebrow">Tagged</p>
+    <h1 class="intro-title">{label}</h1>
   </section>
-  <section class="container">
+  <section class="container container--wide">
     {
       sorted.map((post) => (
         <PostCard
@@ -40,6 +41,7 @@ const sorted = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf(
           title={post.data.title}
           date={post.data.date}
           description={post.data.description}
+          tags={post.data.tags}
           heroImage={post.data.heroImage}
           heroAlt={post.data.heroAlt}
         />
@@ -50,13 +52,20 @@ const sorted = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf(
 
 <style>
   .intro {
-    padding-block: 3rem 1rem;
+    padding-block: clamp(2.5rem, 6vw, 4rem) 1rem;
   }
-  .intro h1 {
-    margin: 0;
+  .intro-title {
+    margin: 0.6rem 0 0;
+    font-size: var(--h1);
   }
-  .back a {
-    color: var(--color-muted);
+  .back {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--muted);
     text-decoration: none;
+  }
+  .back:hover {
+    color: var(--accent-deep);
   }
 </style>

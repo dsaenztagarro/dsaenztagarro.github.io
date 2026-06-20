@@ -8,63 +8,130 @@ interface Props {
   title: string;
   date: Date;
   description?: string;
+  tags?: string[];
   heroImage?: ImageMetadata;
   heroAlt?: string;
+  featured?: boolean;
 }
 
-const { url, title, date, description, heroImage, heroAlt } = Astro.props;
+const { url, title, date, description, tags = [], heroImage, heroAlt, featured = false } =
+  Astro.props;
 ---
 
-<article class="post-card">
-  <a class="post-card-link" href={url}>
-    {
-      heroImage && (
+<article class:list={['card', { 'card--featured': featured }]}>
+  {
+    heroImage && (
+      <a class="card-media" href={url} tabindex="-1" aria-hidden="true">
         <Image
-          class="post-card-image"
           src={heroImage}
           alt={heroAlt ?? ''}
-          widths={[400, 800]}
-          sizes="(max-width: 48rem) 100vw, 48rem"
+          widths={featured ? [480, 900, 1200] : [400, 800]}
+          sizes={featured ? '(max-width: 48rem) 100vw, 60rem' : '(max-width: 48rem) 100vw, 44rem'}
         />
+      </a>
+    )
+  }
+  <div class="card-body">
+    <p class="card-meta">
+      <FormattedDate date={date} />
+      {featured && <span class="card-flag">Latest</span>}
+    </p>
+    <h2 class="card-title"><a href={url}>{title}</a></h2>
+    {description && <p class="card-desc">{description}</p>}
+    {
+      tags.length > 0 && (
+        <ul class="card-tags">
+          {tags.slice(0, 4).map((tag) => (
+            <li>{tag}</li>
+          ))}
+        </ul>
       )
     }
-    <h2 class="post-card-title">{title}</h2>
-    <p class="post-card-meta"><FormattedDate date={date} /></p>
-    {description && <p class="post-card-desc">{description}</p>}
-  </a>
+  </div>
 </article>
 
 <style>
-  .post-card {
-    border-bottom: 1px solid var(--color-border);
-    padding-block: 1.75rem;
+  .card {
+    padding-block: 2.25rem;
+    border-bottom: 1px solid var(--line);
   }
-  .post-card-link {
+  .card-media {
     display: block;
-    color: inherit;
-    text-decoration: none;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
   }
-  .post-card-image {
+  .card-media :global(img) {
+    display: block;
     width: 100%;
     height: auto;
-    border-radius: var(--radius);
-    border: 1px solid var(--color-border);
-    margin-bottom: 1rem;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top;
+    transition: transform 0.5s var(--ease);
   }
-  .post-card-title {
-    margin: 0 0 0.25rem;
-    font-size: 1.35rem;
+  .card:hover .card-media :global(img) {
+    transform: scale(1.02);
   }
-  .post-card-meta {
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     margin: 0 0 0.5rem;
-    color: var(--color-muted);
-    font-size: 0.9rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
-  .post-card-desc {
+  .card-flag {
+    color: var(--accent-deep);
+    font-weight: 600;
+  }
+  .card-title {
     margin: 0;
-    color: var(--color-muted);
+    font-size: var(--h3);
+    letter-spacing: -0.015em;
   }
-  .post-card-link:hover .post-card-title {
-    color: var(--color-accent);
+  .card-title a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .card-title a:hover {
+    color: var(--accent-deep);
+  }
+  .card-desc {
+    margin: 0.55rem 0 0;
+    color: var(--ink-2);
+    max-width: var(--measure);
+  }
+  .card-tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 1rem 0 0;
+    font-family: var(--font-ui);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .card-tags li {
+    color: var(--muted);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+  }
+
+  /* featured: larger title */
+  .card--featured .card-title {
+    font-size: var(--h2);
+  }
+  .card--featured .card-desc {
+    font-size: var(--text-lg);
+    line-height: 1.55;
   }
 </style>

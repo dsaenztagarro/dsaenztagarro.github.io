@@ -7,24 +7,42 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
+const [featured, ...rest] = posts;
 ---
 
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <section class="container intro">
-    <h1>{SITE_TITLE}</h1>
-    <p class="tagline">{SITE_DESCRIPTION}</p>
+  <section class="container container--wide masthead rise">
+    <p class="eyebrow">Engineering notebook</p>
+    <h1 class="masthead-title">
+      Building the systems behind <span class="hl">mcp-rune</span> &amp;
+      <span class="hl">Engineer</span>.
+    </h1>
+    <p class="masthead-lede">{SITE_DESCRIPTION}</p>
   </section>
 
-  <section class="container post-list">
+  <section class="container container--wide feed">
     {
-      posts.map((post) => (
+      featured && (
+        <PostCard
+          featured
+          url={`/blog/${featured.id}/`}
+          title={featured.data.title}
+          date={featured.data.date}
+          description={featured.data.description}
+          tags={featured.data.tags}
+          heroImage={featured.data.heroImage}
+          heroAlt={featured.data.heroAlt}
+        />
+      )
+    }
+    {
+      rest.map((post) => (
         <PostCard
           url={`/blog/${post.id}/`}
           title={post.data.title}
           date={post.data.date}
           description={post.data.description}
-          heroImage={post.data.heroImage}
-          heroAlt={post.data.heroAlt}
+          tags={post.data.tags}
         />
       ))
     }
@@ -32,20 +50,29 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 </BaseLayout>
 
 <style>
-  .intro {
-    padding-block: 3rem 1rem;
+  .masthead {
+    padding-block: clamp(2.75rem, 7vw, 5rem) 1.25rem;
   }
-  .intro h1 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    margin: 0 0 0.5rem;
+  .masthead-title {
+    margin: 1rem 0 0;
+    font-size: var(--h1);
+    max-width: 18ch;
   }
-  .tagline {
-    color: var(--color-muted);
-    font-size: 1.15rem;
-    margin: 0;
-    max-width: var(--measure);
+  .masthead-title .hl {
+    color: var(--accent-deep);
   }
-  .post-list {
+  .masthead-lede {
+    margin: 1.1rem 0 0;
+    font-size: var(--lede);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 48ch;
+  }
+  .feed {
     padding-bottom: 2rem;
+  }
+  /* the first card already opens the section — trim its top padding */
+  .feed :global(.card:first-child) {
+    padding-top: 0.5rem;
   }
 </style>
