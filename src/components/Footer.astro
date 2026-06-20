@@ -1,0 +1,43 @@
+---
+import { AUTHOR, GITHUB_URL, LINKEDIN_URL } from '../consts';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span>© {year} {AUTHOR}</span>
+    <span class="links">
+      <a href={GITHUB_URL} rel="me">GitHub</a>
+      <a href={LINKEDIN_URL} rel="me">LinkedIn</a>
+      <a href="/rss.xml">RSS</a>
+    </span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--color-border);
+    margin-top: 4rem;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .links {
+    display: flex;
+    gap: 1rem;
+  }
+  .links a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: var(--color-fg);
+  }
+</style>

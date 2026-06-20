@@ -1,0 +1,102 @@
+/*
+ * Design tokens + base styles.
+ * This file is the styling surface owned by the "Claude Design" pass.
+ * It ships an intentionally minimal, neutral baseline so the structure is
+ * legible before the visual design lands. See DESIGN_BRIEF.md.
+ */
+:root {
+  /* color */
+  --color-bg: #fdfdfd;
+  --color-surface: #ffffff;
+  --color-fg: #1a1a1a;
+  --color-muted: #6b6b6b;
+  --color-border: #e6e6e6;
+  --color-accent: #2a6df4;
+  --color-accent-fg: #ffffff;
+
+  /* typography */
+  --font-body: ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  --text-base: 1.0625rem;
+  --line-base: 1.7;
+
+  /* layout */
+  --measure: 70ch;
+  --content-width: 48rem;
+  --space: 1rem;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #14151a;
+    --color-surface: #1c1e24;
+    --color-fg: #ececec;
+    --color-muted: #9aa0aa;
+    --color-border: #2a2d35;
+    --color-accent: #6ea8fe;
+    --color-accent-fg: #14151a;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--line-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}

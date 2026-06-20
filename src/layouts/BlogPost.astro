@@ -1,0 +1,139 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from './BaseLayout.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  date: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  heroImage?: ImageMetadata;
+  heroAlt?: string;
+  ogImage?: string;
+}
+
+const { title, description, date, updatedDate, tags = [], heroImage, heroAlt, ogImage } =
+  Astro.props;
+---
+
+<BaseLayout title={title} description={description} image={ogImage} type="article">
+  <article class="container post">
+    <header class="post-header">
+      <h1 class="post-title">{title}</h1>
+      <p class="post-meta">
+        <FormattedDate date={date} />
+        {updatedDate && <span> · updated <FormattedDate date={updatedDate} /></span>}
+      </p>
+      {
+        tags.length > 0 && (
+          <ul class="post-tags">
+            {tags.map((tag) => (
+              <li>
+                <a href={`/tags/${tag.replace(/\s+/g, '-').toLowerCase()}/`}>#{tag}</a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+
+    {
+      heroImage && (
+        <figure class="post-hero">
+          <Image src={heroImage} alt={heroAlt ?? ''} widths={[480, 960, 1440]} sizes="100vw" />
+        </figure>
+      )
+    }
+
+    <div class="prose">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .post {
+    padding-block: 2.5rem;
+  }
+  .post-title {
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    margin: 0 0 0.5rem;
+  }
+  .post-meta {
+    color: var(--color-muted);
+    margin: 0 0 0.75rem;
+  }
+  .post-tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  .post-tags a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .post-hero {
+    margin: 0 0 2rem;
+  }
+  .post-hero :global(img) {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+  }
+  /* Reading column for the rendered MDX body. */
+  .prose {
+    max-width: var(--measure);
+  }
+  .prose :global(p),
+  .prose :global(ul),
+  .prose :global(ol),
+  .prose :global(blockquote) {
+    margin-block: 1.1rem;
+  }
+  .prose :global(h2) {
+    margin-top: 2.25rem;
+    font-size: 1.5rem;
+  }
+  .prose :global(h3) {
+    margin-top: 1.75rem;
+    font-size: 1.2rem;
+  }
+  .prose :global(img) {
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+  }
+  .prose :global(figure) {
+    margin: 2rem 0;
+  }
+  .prose :global(figcaption) {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  .prose :global(blockquote) {
+    border-left: 3px solid var(--color-border);
+    padding-left: 1rem;
+    color: var(--color-muted);
+    font-style: italic;
+  }
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    border: 1px solid var(--color-border);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+</style>
