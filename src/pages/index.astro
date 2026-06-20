@@ -14,10 +14,13 @@ const [featured, ...rest] = posts;
   <section class="container container--wide masthead rise">
     <p class="eyebrow">Engineering notebook</p>
     <h1 class="masthead-title">
-      Building the systems behind <span class="hl">mcp-rune</span> &amp;
-      <span class="hl">Engineer</span>.
+      Notes on <span class="hl">systems</span>, <span class="hl">tooling</span>, and how
+      things work.
     </h1>
-    <p class="masthead-lede">{SITE_DESCRIPTION}</p>
+    <p class="masthead-lede">
+      Software-engineering writing by David Sáenz — MCP and developer tooling, the things
+      I'm building, and the occasional deep dive into the layers underneath.
+    </p>
   </section>
 
   <section class="container container--wide feed">
@@ -56,7 +59,7 @@ const [featured, ...rest] = posts;
   .masthead-title {
     margin: 1rem 0 0;
     font-size: var(--h1);
-    max-width: 18ch;
+    max-width: 24ch;
   }
   .masthead-title .hl {
     color: var(--accent-deep);
