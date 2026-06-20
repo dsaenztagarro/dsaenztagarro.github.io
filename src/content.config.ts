@@ -13,6 +13,9 @@ const blog = defineCollection({
       draft: z.boolean().default(false),
       heroImage: image().optional(),
       heroAlt: z.string().optional(),
+      // When false, heroImage still feeds the card + og:image but is not
+      // rendered at the top of the article body (used when the body shows it).
+      heroInArticle: z.boolean().default(true),
       updatedDate: z.coerce.date().optional(),
     }),
 });

@@ -1,0 +1,230 @@
+---
+title: "Inside engineer-mcp: 15 models, one MCP server, zero per-model handlers"
+date: 2026-06-20 09:00:00 +0200
+description: "A code-level tour of engineer-mcp — the real model declarations, the polymorphic tool surface, chat-vs-agent profiles, domain workflows, and the pgvector retrieval behind the analysis."
+tags:
+  - mcp
+  - mcp-rune
+  - engineer
+  - typescript
+  - architecture
+heroImage: ../../assets/blog/mcp-rune/analysis-charts.png
+heroAlt: "engineer-mcp rendering an analysis of Engineer activities inside Claude Desktop"
+heroInArticle: false
+---
+
+In [the previous post](/blog/introducing-mcp-rune/) I introduced **mcp-rune** — a framework that derives an entire MCP server from your data model — and showed **engineer-mcp** analyzing my learning activities inside Claude Desktop. This post takes that server apart. Everything below is real, current code from engineer-mcp, lightly trimmed.
+
+The thesis to keep in mind: **15 models, and not one per-model tool handler.** The model declarations are the whole contract; mcp-rune does the rest.
+
+## One model, fully described
+
+Here is the Activity model — the busiest one in the server — declared on mcp-rune's `BaseModel`. I've trimmed the attribute list, but the shape is intact:
+
+```javascript
+import { BaseModel } from '@mcp-rune/mcp-rune/models'
+import { searchConfig } from '@mcp-rune/mcp-rune/api-extensions/search'
+import { jsonApiConvention } from '@mcp-rune/mcp-rune/api-conventions'
+
+export class Activity extends BaseModel {
+  static api = { endpoint: 'activities', convention: jsonApiConvention }
+  static modelName = 'activity'
+  static description = 'Focused-learning sessions with timing, classification, and resources'
+
+  static associations = {
+    belongsTo: {
+      domain:        { rel: 'domain', target_model: 'domain' },
+      subdomain:     { rel: 'subdomain', target_model: 'subdomain' },
+      roadmap:       { rel: 'roadmap', target_model: 'roadmap' },
+      roadmap_stage: { rel: 'roadmap_stage', target_model: 'roadmap_stage' }
+    },
+    hasMany: {
+      books:        { rel: 'books', target_model: 'book' },
+      repositories: { rel: 'repositories', target_model: 'repository' }
+    }
+  }
+
+  static attributes = {
+    title:  { type: 'string', required: true, description: 'Title of the activity' },
+    status: { type: 'enum', enumValues: ['planned', 'in_progress', 'completed', 'paused'],
+              default: 'planned' },
+    kind:   { type: 'enum',
+              enumValues: ['deep_work', 'reading', 'coding', 'lecture', 'review', 'pairing', 'other'] },
+    bloom_level: { type: 'enum',
+              enumValues: ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'],
+              description: "Cognitive level on Bloom's taxonomy" },
+    duration_minutes:        { type: 'integer', description: 'Actual duration in minutes' },
+    target_duration_minutes: { type: 'integer', description: 'Intended duration — used for progress' },
+    domain_id:    { type: 'integer', description: 'Domain this activity belongs to (optional)' },
+    roadmap_id:   { type: 'integer', description: 'Associated roadmap (optional)' }
+    // …timestamps, projected names, notes flag, etc.
+  }
+}
+```
+
+Three things are doing the heavy lifting here, and none of them are tool code:
+
+- **`attributes`** is the typed contract. Each field carries its type, whether it's required, its enum values, validation and a description. That single object is what the framework turns into create/update validation, the prompt that guides an LLM through the form, the schema-driven UI, and the field documentation. Change a field once and all four move with it.
+- **`associations`** declares the relationship graph (`belongsTo` / `hasMany`). That's what lets the agent traverse from an activity to its domain, roadmap stage or linked books without bespoke join code.
+- **`api`** picks the wire convention (`jsonApiConvention`) and the REST endpoint. mcp-rune speaks to the existing Rails API; the model never hand-rolls a request.
+
+The model also declares a **search extension** — a set of typed filters that the framework exposes as a real search tool:
+
+```javascript
+static extensions = {
+  search: searchConfig({
+    query: { endpoint: 'activities/search', method: 'POST', queryParam: 'q' },
+    filters: {
+      domain_id:   { type: 'relation', relatedModel: 'domain', label: 'Domain' },
+      status:      { type: 'enum',  enumValues: ['planned', 'in_progress', 'completed', 'paused'] },
+      bloom_level: { type: 'enum',  enumValues: ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'] },
+      kind:        { type: 'enum',  enumValues: ['deep_work', 'reading', 'coding', 'lecture', 'review', 'pairing', 'other'] },
+      started_at:       { type: 'date_range' },
+      duration_minutes: { type: 'integer_range' }
+    },
+    lookup: { fields: ['title', 'description'] }
+  })
+}
+```
+
+The LLM always sees the same filter interface; the adapter maps `duration_minutes: { from, to }` to the backend's `min_duration` / `max_duration` query params behind the scenes.
+
+## Fifteen models, one registry
+
+Every model the server exposes is collected in a single registry. This is the entire list — fifteen classes, no other wiring:
+
+```javascript
+export const MODEL_CLASSES = {
+  activity: Activity,
+  book: Book,
+  book_chapter: BookChapter,
+  contribution: Contribution,
+  domain: Domain,
+  equipment: Equipment,
+  note: Note,
+  problem: Problem,
+  subdomain: Subdomain,
+  tag: Tag,
+  location: Location,
+  repository: Repository,
+  roadmap: Roadmap,
+  roadmap_stage: RoadmapStage,
+  roadmap_resource: RoadmapResource
+}
+```
+
+Adding the sixteenth model is one import and one line here. There is no sixteenth set of tools to write.
+
+## The polymorphic tool surface
+
+This is the part that surprises people. With a conventional MCP server, fifteen models at five CRUD verbs each would be seventy-five tools. engineer-mcp registers a **fixed, generic core** instead:
+
+```text
+list_models       — every registered model + a schema summary
+find_records      — paginated read with filters and includes
+create_model      — validated write
+update_model      — update by id
+delete_model      — delete by id
+bulk_action_models— batch create / update / delete
+```
+
+Every one of them takes the model name as a parameter:
+
+```json
+{ "model": "activity", "attributes": { "title": "Elixir OTP", "kind": "deep_work" } }
+```
+
+So `create_model` creates an activity, a book or a roadmap with the same tool. `list_models` returns the catalog the LLM reasons over:
+
+```json
+[
+  {
+    "name": "activity",
+    "endpoint": "activities",
+    "description": "Focused-learning sessions with timing, classification, and resources",
+    "required_attributes": ["title"],
+    "read_only": false
+  }
+]
+```
+
+On top of that core, mcp-rune ships several **opt-in tool families** that engineer-mcp turns on as needed — form strategies (`get_prompt_guide`, `validate_form`, `get_form_summary`), analysis (`analysis_ingest`, `analysis_query`, `analysis_summarize`), and domain intelligence (`get_domain_context`, `check_business_rules`, `suggest_workflow`). The crucial property holds across all of them: **the tool list is a function of the framework's capabilities, not of how many models you define.** Ten models or a hundred, the picker stays the same size and the LLM keeps choosing accurately.
+
+## Two profiles, one binary
+
+Here's the detail that explains why, in the previous post, Claude rendered a *dashboard* instead of dumping JSON. engineer-mcp ships two **profiles** — the same binary, the same models, a different advertised surface:
+
+```javascript
+export const PROFILES = {
+  chat: {
+    tools: null,
+    toolsExclude: ['find_records', 'search_records', 'list_models'],
+    apps: 'enabled',
+    domain: true
+  },
+  agent: { tools: null, toolsExclude: null, apps: 'disabled', domain: true }
+}
+```
+
+- **`chat`** is the surface for an interactive LLM host. MCP Apps are on, and the raw-JSON data tools (`find_records`, `search_records`, `list_models`) are hidden — so the model *can't* echo record contents as JSON when an App has already rendered them. That's why the analysis came back as overview tiles and donut charts, not a code block.
+- **`agent`** is the headless surface for scripted callers (scheduled jobs, pipelines, mobile clients that can't render an App). Apps are off; the full data-and-mutation tool set is on.
+
+The profile is pure data — an allowlist, a denylist, two flags. No behavior branches inside a tool. Selected at startup via an environment variable; everything else about the server is identical.
+
+## Apps, generated from the same attributes
+
+When the `chat` profile renders UI, it's using mcp-rune's **Interactive MCP Apps** — eight schema-driven app types (create form, edit form, find/browse, record detail, single-pick, multi-pick, selection view, workflow panel). engineer-mcp registers them from the same model registry that drives the tools:
+
+```javascript
+import {
+  createModelFormApp, createFindModelApp, createShowModelApp,
+  createPickModelApp, createMultiPickModelApp, createWorkflowPanelApp
+} from '@mcp-rune/mcp-rune/apps'
+```
+
+A new model form is one registry entry and zero new HTML — the form fields, enum dropdowns and validation come straight from `attributes`.
+
+## Domain workflows: encoding the "how"
+
+CRUD tells an agent *what* it can touch. **Domain workflows** tell it *how* a multi-step task should go. engineer-mcp registers several; the most-used is logging a study session — a five-step `WorkflowDefinition`:
+
+```javascript
+export const studySessionWorkflows = [
+  new WorkflowDefinition({
+    name: 'log_study_session',
+    title: 'Log a Study Session',
+    models: ['activity', 'domain', 'subdomain', 'book', 'repository'],
+    steps: [
+      { order: 1, title: 'Find or create the domain',    tool: 'find_records' },
+      { order: 2, title: 'Find or create the subdomain',  tool: 'find_records' },
+      { order: 3, title: 'Create the activity',           tool: 'get_prompt_guide' },
+      { order: 4, title: 'Link learning resources', /* decision: books / repos / both / skip */ },
+      { order: 5, title: 'Review the session',            tool: 'find_records' }
+    ]
+  })
+]
+```
+
+Each step carries a description, the tool to call, suggested arguments and tips; step 4 is a branch point with labelled options. The agent gets a guided path through *your* process — find-or-create the topic hierarchy, then the activity, then optionally link resources, then verify — instead of guessing the order.
+
+## Retrieval by meaning
+
+The multi-perspective analysis in the previous post — the part where Claude grouped activities thematically, weighed Bloom's levels and flagged the gaps — runs on mcp-rune's **analysis layer**. It's opt-in: when analysis is enabled with a pgvector-backed database, engineer-mcp gains `analysis_ingest`, `analysis_query`, `analysis_store` and `analysis_summarize`.
+
+The loop is: `analysis_ingest` loads the dataset and embeds it; `analysis_query` retrieves by *meaning* (semantic vectors + the relationship graph + the domain vocabulary), not by exact column match; `analysis_summarize` map-reduces the findings. That's how a single question — "analyze my activities from different perspectives" — fans out into status, thematic, cognitive-depth and structural views. The gap detection, by contrast, needs no embeddings at all: it falls straight out of the schema — required fields that are empty, associations that are null, enums skewed to one end.
+
+## Auth and transport
+
+For anything past local development, engineer-mcp uses mcp-rune's **OAuth 2.1** — spec-compliant authorization-server and protected-resource discovery, PKCE, and dynamic client registration, the way MCP Inspector and strict clients expect (RFC 8414 / 8707 / 9728). The same tools, prompts and apps run unchanged over both **stdio** (local) and **Streamable HTTP** (remote, multi-user) — the transport is a deployment choice, not a code change.
+
+## The payoff
+
+Count what engineer-mcp actually hand-writes: fifteen model declarations, a registry line each, a handful of domain workflows, and a few lines of config to pick a profile and turn on analysis. No per-model tool handlers. No bespoke validation. No hand-built forms. No custom analysis code. The model is the source of truth, and the server is derived from it — which is the entire point of [mcp-rune](https://mcp-rune.dev).
+
+If you want to try the pattern on something smaller, the **bookshelf example** is a complete server in a few dozen lines:
+
+```bash
+npm i @mcp-rune/mcp-rune
+```
+
+Then start at **[mcp-rune.dev](https://mcp-rune.dev)**, or go back to [the introduction](/blog/introducing-mcp-rune/) for the why.

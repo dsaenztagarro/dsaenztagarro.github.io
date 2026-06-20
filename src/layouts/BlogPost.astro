@@ -12,11 +12,21 @@ interface Props {
   tags?: string[];
   heroImage?: ImageMetadata;
   heroAlt?: string;
+  heroInArticle?: boolean;
   ogImage?: string;
 }
 
-const { title, description, date, updatedDate, tags = [], heroImage, heroAlt, ogImage } =
-  Astro.props;
+const {
+  title,
+  description,
+  date,
+  updatedDate,
+  tags = [],
+  heroImage,
+  heroAlt,
+  heroInArticle = true,
+  ogImage,
+} = Astro.props;
 const slugifyTag = (t: string) => t.replace(/\s+/g, '-').toLowerCase();
 ---
 
@@ -50,7 +60,7 @@ const slugifyTag = (t: string) => t.replace(/\s+/g, '-').toLowerCase();
     </header>
 
     {
-      heroImage && (
+      heroImage && heroInArticle && (
         <figure class="post-hero rise" style="animation-delay: 240ms">
           <Image
             src={heroImage}

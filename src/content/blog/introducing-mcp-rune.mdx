@@ -1,21 +1,22 @@
 ---
 title: "Introducing mcp-rune: turn your data model into a complete MCP server"
 date: 2026-06-20 10:00:00 +0200
-description: "mcp-rune generates tools, prompts, auth and interactive UI from a single model definition. Here is the framework — and engineer-mcp, a real integration that lets Claude analyze your learning, as proof."
+description: "mcp-rune derives tools, prompts, auth and interactive UI from one model definition. Here is the framework — and engineer-mcp, a real integration that lets Claude analyze your learning, as proof."
 tags:
   - mcp
   - framework
   - typescript
   - claude
   - engineer
-heroImage: ../../assets/blog/mcp-rune/screenshot-1.png
-heroAlt: "Claude Desktop rendering a multi-perspective analysis of Engineer activities through engineer-mcp"
+heroImage: ../../assets/blog/mcp-rune/analysis-charts.png
+heroAlt: "Claude Desktop rendering a visual analysis of Engineer activities through engineer-mcp"
+heroInArticle: false
 ---
 
 import { Image } from 'astro:assets';
-import shotData from '../../assets/blog/mcp-rune/screenshot-3.png';
-import shotReport from '../../assets/blog/mcp-rune/screenshot-1.png';
-import shotAnalysis from '../../assets/blog/mcp-rune/screenshot-2.png';
+import shotData from '../../assets/blog/mcp-rune/engineer-activities.png';
+import shotCharts from '../../assets/blog/mcp-rune/analysis-charts.png';
+import shotWriteup from '../../assets/blog/mcp-rune/analysis-writeup.png';
 
 I built a couple of production MCP servers over the past year. Along the way I kept extracting the same patterns into a library — model definitions, CRUD tools, prompt strategies, form generation, OAuth flows. Eventually I realized I wasn't building servers anymore. I was building a framework.
 
@@ -29,41 +30,37 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is spreading fast
 2. **Protocol wrappers** (FastMCP, mcp-framework) — nicer registration, still one handler per tool.
 3. **API converters** (Stainless, FastAPI-MCP) — generate tools from OpenAPI specs, with no intelligence layer.
 
-If your server manages models — books, projects, activities, anything with CRUD — you write the same five handlers, the same validation, the same field docs, for every model. Ten models × five verbs = fifty hand-written tools, a picker that overflows, and an LLM that struggles to choose between them. Add prompts, forms and search and it's hundreds of lines of boilerplate per model.
+If your server manages models — books, projects, activities, anything with CRUD — you write the same handlers, the same validation, the same field docs, for every model. Ten models × five verbs = fifty hand-written tools, a picker that overflows, and an LLM that struggles to choose between them. Add prompts, forms and search and it's hundreds of lines of boilerplate per model.
 
-This is the problem Rails solved for web apps in 2004. Convention over configuration. The model is the source of truth. Write it once, generate the rest.
+This is the problem Rails solved for web apps in 2004. Convention over configuration. The model is the source of truth. Write it once, derive the rest.
 
 ## What mcp-rune is
 
-mcp-rune is an opinionated, model-driven framework. You declare a model once, and you get tools, prompts, forms, docs and interactive UI for free.
+mcp-rune is a model-driven framework. You declare a model once, and it derives the tools, prompts, forms, docs and interactive UI an agent needs — then indexes your data so the agent retrieves by meaning, not raw rows.
 
 ```typescript
-import { BaseModel } from '@mcp-rune/mcp-rune/core'
-import type { AttributeDefinition } from '@mcp-rune/mcp-rune/core'
+import { BaseModel } from '@mcp-rune/mcp-rune'
 
 export class Book extends BaseModel {
-  static override endpoint = 'books'
-  static override attributes: Record<string, AttributeDefinition> = {
-    title:  { type: 'string', required: true, description: 'Book title' },
-    author: { type: 'string', required: true, description: 'Author name' },
-    status: { type: 'enum', enumValues: ['unread', 'reading', 'completed'],
-              default: 'unread' },
-    rating: { type: 'integer', description: 'Rating from 1-5',
-              validation: { min: 1, max: 5 } }
+  static override attributes = {
+    title:  { type: 'string', required: true },
+    author: { type: 'string', required: true },
+    status: { type: 'enum', values: ['reading', 'done'] },
+    rating: { type: 'integer', validation: { min: 1, max: 5 } }
   }
 }
 ```
 
-Thirty lines of config. From that, the framework builds six things.
+That's the whole model. From it, the framework gives you the rest.
 
-## The six pillars
+## What it derives
 
-- **Polymorphic CRUD** — a fixed set of eight generic tools (`list_models`, `find_model`, `create_model`, `update_model`, `delete_model`, `search_records`, `bulk_action_models`, …) serves *unlimited* models. The LLM passes the model name as a parameter; the tool count never grows, so tool selection stays accurate whether you register 10 models or 100.
-- **Prompt strategies** — guided form filling that adapts to complexity: *stateless* (< 10 fields, docs only), *hybrid* (10–20 fields, docs + validation + summary), *stateful* (20+ fields, section-by-section progress). All derived from the model, so docs never drift.
-- **Interactive MCP Apps** — schema-driven UI (forms, list views, record detail, search, autocomplete and multi-select pickers) rendered directly inside Claude Desktop and compatible hosts. Same model config that drives the tools; zero hand-written HTML.
-- **Analysis Memories** — GraphRAG-powered semantic search and map-reduce aggregation over your records, backed by local pgvector.
-- **Domain Intelligence** — encoded business rules, workflows and terminology so the server understands *your* domain, not just generic CRUD.
-- **OAuth 2.1 + PKCE** — production-grade auth with audience-restricted tokens (RFCs 7636, 7591, 8414, 8707, 9728), on both stdio (local) and Streamable HTTP (remote, multi-user) transports.
+- **Polymorphic CRUD** — a fixed core of generic tools (`list_models`, `find_records`, `create_model`, `update_model`, `delete_model`, `bulk_action_models`) serves *every* model you declare. The LLM passes the model name as a parameter, so the tool list never grows with your domain — register 10 models or 100 and tool selection stays accurate.
+- **Prompt strategies** — agent-followable prompts with sections, validation, enum tables and turn-taking, all derived from your attributes, so the docs never drift from the model.
+- **Interactive MCP Apps** — schema-driven create / edit / search / picker UIs rendered *inside* Claude Desktop and compatible hosts. No per-model HTML.
+- **Analysis & retrieval** — opt-in semantic search and map-reduce aggregation over your records (vectors + a relationship graph + your domain vocabulary), backed by local pgvector, so the agent retrieves by meaning.
+- **Domain intelligence** — encoded business rules and multi-step workflows, so the server understands *your* domain instead of generic CRUD.
+- **OAuth 2.1** — spec-compliant discovery and PKCE the way Inspector and strict clients expect, on both stdio (local) and Streamable HTTP (remote, multi-user) transports.
 
 Everyone else works at the tool/transport level. mcp-rune works at the **application** level. The full breakdown lives at [mcp-rune.dev](https://mcp-rune.dev).
 
@@ -71,30 +68,32 @@ Everyone else works at the tool/transport level. mcp-rune works at the **applica
 
 A framework is only as convincing as what it ships. So here is a real one.
 
-[Engineer](https://engineer.dsaenz.dev) is a personal-development platform I run — *track your growth, build better habits.* It has a real data model: activities, roadmaps, domains, Bloom's-taxonomy levels, logged time. **engineer-mcp** is that data model turned into an MCP server with mcp-rune. No bespoke tool handlers — the model definition *is* the server.
+[Engineer](https://engineer.dsaenz.dev) is a personal-development platform I run — *track your growth, build better habits.* **engineer-mcp** turns its data model into an MCP server with mcp-rune: **15 models** — activities, domains, subdomains, roadmaps, books, problems, repositories and more — exposed to Claude with no bespoke tool handlers. The model definitions *are* the server.
 
-Here's the source data, in Engineer's own UI — a handful of activities across Maths and Software Development, each with a kind, a domain, a Bloom level and logged time:
+Take the Activity model alone: a `kind` (deep work, reading, coding, lecture, review, pairing), a Bloom's-taxonomy `bloom_level` (remember → understand → apply → analyze → evaluate → create), a domain and subdomain, target vs. actual minutes, and an optional roadmap stage. Here is that data in Engineer's own UI:
 
 <figure>
   <Image src={shotData} alt="Engineer's Activities list: Functions and curves, MCP Server Development in Ruby, with kind, domain, Bloom level and logged time columns" />
-  <figcaption>The raw model in Engineer — activities, domains, Bloom levels, logged time.</figcaption>
+  <figcaption>The source data in Engineer — activities, domains, Bloom levels, logged time.</figcaption>
 </figure>
 
-Now I open Claude Desktop and ask, plainly: *"Can you analyze all my activities and take conclusions about my activity sessions from different perspectives?"* Claude discovers the engineer-mcp tools, ingests the activities with a few polymorphic queries, and renders a rich visual report — an **Interactive MCP App**, not a wall of text:
+Now I open Claude Desktop and ask, plainly: *"Can you analyze all my activities and take conclusions about my activity sessions from different perspectives?"* Claude discovers the engineer-mcp tools, ingests the activities with a few polymorphic queries, and renders a rich visual report:
 
 <figure>
-  <Image src={shotReport} alt="Claude Desktop showing an overview dashboard: total activities, planned time, distribution donuts by kind and Bloom level, and a per-session duration bar chart" />
+  <Image src={shotCharts} alt="Claude Desktop dashboard: total activities, planned time, distribution donuts by kind and Bloom level, and a per-session duration bar chart" />
   <figcaption>An Interactive MCP App rendered inside Claude Desktop, generated from the model.</figcaption>
 </figure>
 
-Overview tiles, distribution donuts by kind and by Bloom's level, a per-session duration bar chart, the full activity list — all driven by the same `attributes` and field groups that define the model. Then Claude reasons over it across several perspectives and, crucially, surfaces the **data-quality gaps**: two activities with no duration set, every activity with a `null` domain and subdomain, nothing linked to a roadmap, zero sessions actually executed:
+That it's a *dashboard* and not a wall of JSON is deliberate. engineer-mcp runs a **chat profile** that hides the raw data tools, so instead of echoing rows Claude reaches for one of mcp-rune's Interactive Apps — overview tiles, distribution donuts by kind and by Bloom's level, a duration chart — all driven by the same attributes that define the model.
+
+Then Claude reasons over the data across several perspectives and, crucially, surfaces the **data-quality gaps**: activities with no duration set, every record with a `null` domain, nothing linked to a roadmap, zero sessions executed:
 
 <figure>
-  <Image src={shotAnalysis} alt="Claude's written multi-perspective analysis: status, thematic, cognitive-depth, duration and structural perspectives, plus a data-quality and gaps panel" />
-  <figcaption>Multi-perspective analysis plus an honest data-quality audit — straight from the model's structure.</figcaption>
+  <Image src={shotWriteup} alt="Claude's written multi-perspective analysis: status, thematic, cognitive-depth, duration and structural perspectives, plus a data-quality and gaps panel" />
+  <figcaption>A data-quality audit plus a multi-perspective analysis — straight from the model's structure.</figcaption>
 </figure>
 
-None of that required a single hand-written analysis tool. The semantic search and aggregation come from Analysis Memories; the gap detection falls out of the model's own schema (required fields, associations, enums). I described the domain once; mcp-rune did the rest.
+None of that required a single hand-written analysis tool. The semantic search and aggregation come from the analysis layer; the gap detection falls out of the model's own schema — required fields, associations, enums. I described the domain once; mcp-rune did the rest.
 
 ## Who it's for
 
@@ -106,6 +105,10 @@ If you own a SaaS product, an API, an internal tool, or a data platform and you 
 npm i @mcp-rune/mcp-rune
 ```
 
-It runs on Node 20+ or Bun, ships full TypeScript declarations (autocomplete and type-checking out of the box), and is MIT-licensed. It's extracted from production servers that power real workflows daily — engineer-mcp is one of them — not a proof of concept.
+It runs on Node 24+, ships full TypeScript declarations (autocomplete and type-checking out of the box), and is MIT-licensed. It's extracted from production servers that power real workflows daily — engineer-mcp is one of them — not a proof of concept.
 
-Start at **[mcp-rune.dev](https://mcp-rune.dev)**. If you build something with it, I'd love to hear about it.
+Start at **[mcp-rune.dev](https://mcp-rune.dev)**.
+
+---
+
+**Want to see how it's actually wired?** The next post takes engineer-mcp apart — the real model declarations, the polymorphic tool surface, the chat-vs-agent profiles, domain workflows, and the pgvector retrieval behind the analysis above: **[Inside engineer-mcp →](/blog/inside-engineer-mcp/)**
