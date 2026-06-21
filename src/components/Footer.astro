@@ -1,0 +1,52 @@
+---
+import { AUTHOR, GITHUB_URL, LINKEDIN_URL } from '../consts';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container container--wide footer-inner">
+    <span class="colophon">
+      © {year} {AUTHOR} · built with Astro
+    </span>
+    <span class="links">
+      <a href={GITHUB_URL} rel="me">GitHub</a>
+      <a href={LINKEDIN_URL} rel="me">LinkedIn</a>
+      <a href="/rss.xml">RSS</a>
+    </span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    margin-top: 5rem;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    flex-wrap: wrap;
+    padding-block: 2rem;
+  }
+  .colophon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .links {
+    display: flex;
+    gap: 1.25rem;
+  }
+  .links a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.18s var(--ease);
+  }
+  .links a:hover {
+    color: var(--ink);
+  }
+</style>

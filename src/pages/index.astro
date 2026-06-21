@@ -1,0 +1,83 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+// Feature the post flagged `featured`; otherwise fall back to the newest.
+const featured = posts.find((p) => p.data.featured) ?? posts[0];
+const rest = posts.filter((p) => p !== featured);
+---
+
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <section class="container container--wide masthead rise">
+    <p class="eyebrow">Engineering notebook</p>
+    <h1 class="masthead-title">
+      Notes on <span class="hl">systems</span>, <span class="hl">tooling</span>, and how
+      things work.
+    </h1>
+    <p class="masthead-lede">
+      Software-engineering writing by David Sáenz — MCP and developer tooling, the things
+      I'm building, and the occasional deep dive into the layers underneath.
+    </p>
+  </section>
+
+  <section class="container container--wide feed">
+    {
+      featured && (
+        <PostCard
+          featured
+          url={`/blog/${featured.id}/`}
+          title={featured.data.title}
+          date={featured.data.date}
+          description={featured.data.description}
+          tags={featured.data.tags}
+          heroImage={featured.data.heroImage}
+          heroAlt={featured.data.heroAlt}
+        />
+      )
+    }
+    {
+      rest.map((post) => (
+        <PostCard
+          url={`/blog/${post.id}/`}
+          title={post.data.title}
+          date={post.data.date}
+          description={post.data.description}
+          tags={post.data.tags}
+        />
+      ))
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .masthead {
+    padding-block: clamp(2.75rem, 7vw, 5rem) 1.25rem;
+  }
+  .masthead-title {
+    margin: 1rem 0 0;
+    font-size: var(--h1);
+    max-width: 24ch;
+  }
+  .masthead-title .hl {
+    color: var(--accent-deep);
+  }
+  .masthead-lede {
+    margin: 1.1rem 0 0;
+    font-size: var(--lede);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 48ch;
+  }
+  .feed {
+    padding-bottom: 2rem;
+  }
+  /* the first card already opens the section — trim its top padding */
+  .feed :global(.card:first-child) {
+    padding-top: 0.5rem;
+  }
+</style>

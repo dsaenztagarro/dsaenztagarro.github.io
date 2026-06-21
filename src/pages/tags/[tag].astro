@@ -1,0 +1,71 @@
+---
+import { getCollection } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+
+export const getStaticPaths = (async () => {
+  const slugify = (tag: string) => tag.replace(/\s+/g, '-').toLowerCase();
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const tags = new Map<string, { label: string; posts: typeof posts }>();
+
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
+      const key = slugify(tag);
+      if (!tags.has(key)) tags.set(key, { label: tag, posts: [] });
+      tags.get(key)!.posts.push(post);
+    }
+  }
+
+  return [...tags.entries()].map(([key, { label, posts }]) => ({
+    params: { tag: key },
+    props: { label, posts },
+  }));
+}) satisfies GetStaticPaths;
+
+const { label, posts } = Astro.props;
+const sorted = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title={`#${label}`} description={`Posts tagged ${label}`}>
+  <section class="container container--wide intro rise">
+    <a class="back" href="/">← Writing</a>
+    <p class="eyebrow">Tagged</p>
+    <h1 class="intro-title">{label}</h1>
+  </section>
+  <section class="container container--wide">
+    {
+      sorted.map((post) => (
+        <PostCard
+          url={`/blog/${post.id}/`}
+          title={post.data.title}
+          date={post.data.date}
+          description={post.data.description}
+          tags={post.data.tags}
+          heroImage={post.data.heroImage}
+          heroAlt={post.data.heroAlt}
+        />
+      ))
+    }
+  </section>
+</BaseLayout>
+
+<style>
+  .intro {
+    padding-block: clamp(2.5rem, 6vw, 4rem) 1rem;
+  }
+  .intro-title {
+    margin: 0.6rem 0 0;
+    font-size: var(--h1);
+  }
+  .back {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .back:hover {
+    color: var(--accent-deep);
+  }
+</style>

@@ -1,0 +1,25 @@
+import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const blog = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      // Jekyll dates carried a "+0200" offset; z.coerce.date() parses them.
+      date: z.coerce.date(),
+      description: z.string().optional(),
+      tags: z.array(z.string()).default([]),
+      draft: z.boolean().default(false),
+      // Pin this post as the homepage hero, regardless of date.
+      featured: z.boolean().default(false),
+      heroImage: image().optional(),
+      heroAlt: z.string().optional(),
+      // When false, heroImage still feeds the card + og:image but is not
+      // rendered at the top of the article body (used when the body shows it).
+      heroInArticle: z.boolean().default(true),
+      updatedDate: z.coerce.date().optional(),
+    }),
+});
+
+export const collections = { blog };
