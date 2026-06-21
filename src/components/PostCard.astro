@@ -34,7 +34,7 @@ const { url, title, date, description, tags = [], heroImage, heroAlt, featured =
   <div class="card-body">
     <p class="card-meta">
       <FormattedDate date={date} />
-      {featured && <span class="card-flag">Latest</span>}
+      {featured && <span class="card-flag">Featured</span>}
     </p>
     <h2 class="card-title"><a href={url}>{title}</a></h2>
     {description && <p class="card-desc">{description}</p>}

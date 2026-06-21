@@ -7,7 +7,9 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
-const [featured, ...rest] = posts;
+// Feature the post flagged `featured`; otherwise fall back to the newest.
+const featured = posts.find((p) => p.data.featured) ?? posts[0];
+const rest = posts.filter((p) => p !== featured);
 ---
 
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>

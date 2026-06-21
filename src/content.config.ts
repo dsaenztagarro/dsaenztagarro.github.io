@@ -11,6 +11,8 @@ const blog = defineCollection({
       description: z.string().optional(),
       tags: z.array(z.string()).default([]),
       draft: z.boolean().default(false),
+      // Pin this post as the homepage hero, regardless of date.
+      featured: z.boolean().default(false),
       heroImage: image().optional(),
       heroAlt: z.string().optional(),
       // When false, heroImage still feeds the card + og:image but is not
