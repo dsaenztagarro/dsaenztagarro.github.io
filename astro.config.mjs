@@ -7,6 +7,9 @@ import expressiveCode from 'astro-expressive-code';
 // User pages repo: served at the domain root, so no `base` is set.
 export default defineConfig({
   site: 'https://dsaenztagarro.github.io',
+  // The layouts rely on line breaks between inline elements (nav links, the
+  // post date and its badge) rendering as spaces; JSX-style compression drops them.
+  compressHTML: true,
   // Preserve old Jekyll RSS subscribers pointed at /feed.xml.
   redirects: {
     '/feed.xml': '/rss.xml',
