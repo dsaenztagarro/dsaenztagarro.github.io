@@ -6,7 +6,7 @@ GitHub Pages via GitHub Actions.
 ## Develop
 
 ```bash
-npm install      # Node 20+ (see .nvmrc — 24)
+npm install      # Node 22.12+ (see .nvmrc — 24)
 npm run dev      # local dev server
 npm run build    # static build into dist/
 npm run preview  # serve the built site locally
